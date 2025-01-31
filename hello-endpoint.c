@@ -8,6 +8,7 @@
 #include <signal.h>
 
 #define BUFFER_SIZE 4096
+#define MAX_ENDPOINT_LENGTH 200
 
 int server_fd, new_socket;
 
@@ -36,6 +37,43 @@ void handle_signal(int sig) {
     exit(0);
 }
 
+void handle_request(char buffer[BUFFER_SIZE], int socket) {
+	if (buffer[0] != 'G' || buffer[1] != 'E' || buffer[2] != 'T') {
+        char *response = "HTTP/1.1 400 Bad Request\r\n";
+        send(new_socket, response, strlen(response), 0);
+		return;
+	}
+
+	// request should start with "GET /enpoint "
+	// endpoint variable will have '/' included in it
+	char endpoint[MAX_ENDPOINT_LENGTH];
+	for (int i=0; i < MAX_ENDPOINT_LENGTH; i++) {
+		char endpoint_char = buffer[4 + i];
+		if (endpoint_char == ' ') {
+			endpoint[i] = '\0';
+			break;
+		}
+		endpoint[i] = endpoint_char;
+	}
+
+
+    if (strcmp(endpoint, "/hello") == 0) {
+    	// Respond with a basic HTTP 200 response
+        char *response = "HTTP/1.1 200 OK\r\nContent-Length: 13\r\n\r\nHello, World!";
+        send(new_socket, response, strlen(response), 0);
+        return;
+    }
+
+    if (strcmp(endpoint, "") == 0) {
+        log_message("Empty endpoint from request");
+        return;
+	}
+
+    log_message("Endpoint not matched, ignoring request.");
+    return;
+}
+
+
 int main(int argc, char* argv[]) {
 	if (argc != 2) {
     	fprintf(stderr, "Usage: %s <port>\n", argv[0]);
@@ -63,10 +101,8 @@ int main(int argc, char* argv[]) {
         read(new_socket, buffer, BUFFER_SIZE);
         log_message("Received request:\n%s\n", buffer);
 
-        // Respond with a basic HTTP 200 response
-        char *response = "HTTP/1.1 200 OK\r\nContent-Length: 13\r\n\r\nHello, World!";
-        send(new_socket, response, strlen(response), 0);
-        close(new_socket);
+        handle_request(buffer, new_socket);
+		close(new_socket);
     }
 
     close(server_fd);
