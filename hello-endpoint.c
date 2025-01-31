@@ -3,8 +3,38 @@
 #include <string.h>
 #include <unistd.h>
 #include <arpa/inet.h>
+#include <time.h>
+#include <stdarg.h>
+#include <signal.h>
 
 #define BUFFER_SIZE 4096
+
+int server_fd, new_socket;
+
+
+void log_message(const char *format, ...) {
+    time_t now = time(NULL);
+    struct tm *tm_info = localtime(&now);
+    char timestamp[20];
+    strftime(timestamp, sizeof(timestamp), "%Y-%m-%d %H:%M:%S", tm_info);
+
+    printf("[%s] ", timestamp);
+
+    va_list args;
+    va_start(args, format);
+    vprintf(format, args);
+    va_end(args);
+
+    printf("\n");
+}
+
+void handle_signal(int sig) {
+	log_message("Handling SIGINT\n");
+    close(new_socket);
+    close(server_fd);
+    log_message("Server shut down gracefully\n");
+    exit(0);
+}
 
 int main(int argc, char* argv[]) {
 	if (argc != 2) {
@@ -12,8 +42,9 @@ int main(int argc, char* argv[]) {
     	return 1;
 	}
 	int port = atoi(argv[1]);
+
+    signal(SIGINT, handle_signal); // Handle Ctrl+C
 	
-    int server_fd, new_socket;
     struct sockaddr_in address;
     socklen_t addr_len = sizeof(address);
     char buffer[BUFFER_SIZE];
@@ -26,11 +57,11 @@ int main(int argc, char* argv[]) {
     bind(server_fd, (struct sockaddr *)&address, sizeof(address));
     listen(server_fd, 10);
 
-    printf("Listening on port %d...\n", port);
+    log_message("Listening on port %d...\n\n", port);
     while (1) {
         new_socket = accept(server_fd, (struct sockaddr *)&address, &addr_len);
         read(new_socket, buffer, BUFFER_SIZE);
-        printf("Received request:\n%s\n", buffer);
+        log_message("Received request:\n%s\n", buffer);
 
         // Respond with a basic HTTP 200 response
         char *response = "HTTP/1.1 200 OK\r\nContent-Length: 13\r\n\r\nHello, World!";
