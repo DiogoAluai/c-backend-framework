@@ -1,0 +1,110 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <arpa/inet.h>
+#include <time.h>
+#include <stdarg.h>
+#include <signal.h>
+
+#define BUFFER_SIZE 4096
+#define MAX_ENDPOINT_LENGTH 200
+
+int server_fd, new_socket;
+
+
+void log_message(const char *format, ...) {
+    time_t now = time(NULL);
+    struct tm *tm_info = localtime(&now);
+    char timestamp[20];
+    strftime(timestamp, sizeof(timestamp), "%Y-%m-%d %H:%M:%S", tm_info);
+
+    printf("[%s] ", timestamp);
+
+    va_list args;
+    va_start(args, format);
+    vprintf(format, args);
+    va_end(args);
+
+    printf("\n");
+}
+
+void handle_signal(int sig) {
+	log_message("Handling SIGINT\n");
+    close(new_socket);
+    close(server_fd);
+    log_message("Server shut down gracefully\n");
+    exit(0);
+}
+
+void handle_request(char buffer[BUFFER_SIZE], int socket) {
+	if (buffer[0] != 'G' || buffer[1] != 'E' || buffer[2] != 'T') {
+        char *response = "HTTP/1.1 400 Bad Request\r\n";
+        send(new_socket, response, strlen(response), 0);
+		return;
+	}
+
+	// request should start with "GET /enpoint "
+	// endpoint variable will have '/' included in it
+	char endpoint[MAX_ENDPOINT_LENGTH];
+	for (int i=0; i < MAX_ENDPOINT_LENGTH; i++) {
+		char endpoint_char = buffer[4 + i];
+		if (endpoint_char == ' ') {
+			endpoint[i] = '\0';
+			break;
+		}
+		endpoint[i] = endpoint_char;
+	}
+
+
+    if (strcmp(endpoint, "/hello") == 0) {
+    	// Respond with a basic HTTP 200 response
+        char *response = "HTTP/1.1 200 OK\r\nContent-Length: 13\r\n\r\nHello, World!";
+        send(new_socket, response, strlen(response), 0);
+        return;
+    }
+
+    if (strcmp(endpoint, "") == 0) {
+        log_message("Empty endpoint from request");
+        return;
+	}
+
+    log_message("Endpoint not matched, ignoring request.");
+    return;
+}
+
+
+int main(int argc, char* argv[]) {
+	if (argc != 2) {
+    	fprintf(stderr, "Usage: %s <port>\n", argv[0]);
+    	return 1;
+	}
+	int port = atoi(argv[1]);
+
+    signal(SIGINT, handle_signal); // Handle Ctrl+C
+	
+    struct sockaddr_in address;
+    socklen_t addr_len = sizeof(address);
+    char buffer[BUFFER_SIZE];
+
+    server_fd = socket(AF_INET, SOCK_STREAM, 0);
+    address.sin_family = AF_INET;
+    address.sin_addr.s_addr = INADDR_ANY;
+    address.sin_port = htons(port);
+
+    bind(server_fd, (struct sockaddr *)&address, sizeof(address));
+    listen(server_fd, 10);
+
+    log_message("Listening on port %d...\n\n", port);
+    while (1) {
+        new_socket = accept(server_fd, (struct sockaddr *)&address, &addr_len);
+        read(new_socket, buffer, BUFFER_SIZE);
+        log_message("Received request:\n%s\n", buffer);
+
+        handle_request(buffer, new_socket);
+		close(new_socket);
+    }
+
+    close(server_fd);
+    return 0;
+}
