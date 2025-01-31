@@ -11,6 +11,7 @@
 #define MAX_ENDPOINT_LENGTH 200
 
 int server_fd, new_socket;
+char* response;
 
 
 void log_message(const char *format, ...) {
@@ -34,12 +35,14 @@ void handle_signal(int sig) {
     close(new_socket);
     close(server_fd);
     log_message("Server shut down gracefully\n");
+    free(response);
     exit(0);
 }
 
 void handle_request(char buffer[BUFFER_SIZE], int socket) {
 	if (buffer[0] != 'G' || buffer[1] != 'E' || buffer[2] != 'T') {
-        char *response = "HTTP/1.1 400 Bad Request\r\n";
+        char *response_content = "HTTP/1.1 400 Bad Request\r\n";
+        sprintf(response, "HTTP/1.1 400 Bad Request\r\n");
         send(new_socket, response, strlen(response), 0);
 		return;
 	}
@@ -74,6 +77,7 @@ int main(int argc, char* argv[]) {
     	return 1;
 	}
 	int port = atoi(argv[1]);
+    response = (char *)malloc(BUFFER_SIZE * sizeof(char));
 
     signal(SIGINT, handle_signal); // Handle Ctrl+C
 	
@@ -99,6 +103,7 @@ int main(int argc, char* argv[]) {
 		close(new_socket);
     }
 
+    free(response);
     close(server_fd);
     return 0;
 }

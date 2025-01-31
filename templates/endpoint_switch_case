@@ -1,7 +1,14 @@
-   if (strcmp(endpoint, "/hello") == 0) {
-        // Respond with a basic HTTP 200 response
-        char *response = "HTTP/1.1 200 OK\r\nContent-Length: 13\r\n\r\nHello, World!";
+    if (strcmp(endpoint, "CBF-ENDPOINT") == 0) {
+
+		// CBF-RESPONSE-CONTENT-INIT
+
+        if (strlen(response_content) > BUFFER_SIZE - 100) {
+            log_message("[ERROR] Response content is too large, sending code 500");
+            char *response = "HTTP/1.1 500 ERROR\r\n";
+            send(new_socket, response, strlen(response), 0);
+            return;
+        }
+        sprintf(response, "HTTP/1.1 200 OK\r\nContent-Length: %ld\r\n\r\n%s", strlen(response_content), response_content);
         send(new_socket, response, strlen(response), 0);
         return;
     }
-
