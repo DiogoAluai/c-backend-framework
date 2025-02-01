@@ -2,6 +2,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+// @GET("/hello")
+char* hello(/* params unsupported*/) {
+    return "Hello World!\n";
+}
+
 
 // @GET("/some")
 char* getSome() {
