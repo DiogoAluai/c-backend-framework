@@ -18,7 +18,8 @@ The specificiation file is prepended to the final `backend.c`. This means includ
 
 Running the backend:
 ```bash
-$ ./generate-backend.sh example_specification.c
+$ ./install.sh
+$ generate-backend example_specification.c
 $ ./backend 8080
 
 # elsewhere:
