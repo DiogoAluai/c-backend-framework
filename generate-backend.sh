@@ -8,6 +8,12 @@ if [ $# -lt 1 ]; then
 fi
 
 endpoint_specification="$1"
+templates="/opt/daluai-c-backend-framework/templates"
+
+if [ ! -e "$templates" ]; then
+  echo "[ERROR] Templates not found in $templates. Maybe install script did not ran?"
+  exit 1  
+fi
 
 generate-endpoint-code() {
   # Usage: generate-endpoint-code endpoint c_function
@@ -16,13 +22,14 @@ generate-endpoint-code() {
 
   endpoint_no_slash="${endpoint:1}"
   endpoint_code_file="$endpoint_no_slash"_endpoint
-  cp templates/endpoint_switch_case "$endpoint_code_file"
+  cp "$templates"/endpoint_switch_case.cbf "$endpoint_code_file"
   sed "s/\/\/ CBF-RESPONSE-CONTENT-INIT/response_content=$c_function();/g" -i "$endpoint_code_file"
   sed "s/CBF-ENDPOINT/\/$endpoint_no_slash/g" -i "$endpoint_code_file"
   awk "/CBF-ENDPOINT-SWITCH-CASE/ {while ((getline line < \"$endpoint_code_file\") > 0) print line} 1" backend.c  > temp && mv temp backend.c
+  rm "$endpoint_code_file"
 }
 
-cat "$endpoint_specification" backend.cbf > backend.c
+cat "$endpoint_specification" "$templates"/backend.cbf > backend.c
 
 for endpoint_line in $(cat -n "$endpoint_specification" | grep "//" | grep -i "GET" | cut -d $'\t' -f1); do
   function_line=$((endpoint_line + 1))
@@ -40,8 +47,6 @@ for endpoint_line in $(cat -n "$endpoint_specification" | grep "//" | grep -i "G
   generate-endpoint-code "$endpoint" "$c_function"  
 
 done
-
-
 
 
 
