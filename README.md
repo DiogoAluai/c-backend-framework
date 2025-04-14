@@ -15,7 +15,7 @@ char* hello(/* params unsupported*/) {
 
 // @GET("/redirection")
 char* classic_redirection() {
-	// Starting string with HTTP fully delegates HTTP mechanics to this callback
+    // Starting string with HTTP fully delegates HTTP mechanics to this callback
     return "HTTP/1.1 302 Found\r\nLocation: https://example.com\r\nContent-Length: 0\r\n";
 }
 
