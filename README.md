@@ -12,6 +12,13 @@ specification.c
 char* hello(/* params unsupported*/) {
     return "Hello World!\n";
 }
+
+// @GET("/redirection")
+char* classic_redirection() {
+	// Starting string with HTTP fully delegates HTTP mechanics to this callback
+    return "HTTP/1.1 302 Found\r\nLocation: https://example.com\r\nContent-Length: 0\r\n";
+}
+
 ```
 
 The specificiation file is prepended to the final `backend.c`. This means include directives and global variables can work.

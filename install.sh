@@ -1,8 +1,9 @@
 #!/bin/bash
 
 
-if [ -e "/usr/local/bin/generate-backend" ]; then
+if [ -e "/usr/local/bin/generate-backend" ] && [ "$1" != "-o" ]; then
     echo "/usr/local/bin/generate-backend exists, aborting installation"
+    echo "install with '-o' argument to override"
     exit 1
 fi
 

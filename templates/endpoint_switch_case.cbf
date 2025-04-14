@@ -8,7 +8,16 @@
             send(new_socket, response, strlen(response), 0);
             return;
         }
-        sprintf(response, "HTTP/1.1 200 OK\r\nContent-Length: %ld\r\n\r\n%s", strlen(response_content), response_content);
+    	if (strlen(response_content) >= 4 
+    	 && response_content[0] == 'H' 
+    	 && response_content[1] == 'T' 
+    	 && response_content[2] == 'T' 
+    	 && response_content[3] == 'P') {
+            log_message("[INFO] Delegating HTTP mechanics to specification's function");
+	        sprintf(response, "%s", response_content);
+		} else {
+	        sprintf(response, "HTTP/1.1 200 OK\r\nContent-Length: %ld\r\n\r\n%s", strlen(response_content), response_content);
+		}
         send(new_socket, response, strlen(response), 0);
         return;
     }
